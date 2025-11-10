@@ -12,3 +12,6 @@ pytest-asyncio
 httpx
 email-validator
 pydantic-settings
+google-genai
+python-dotenv
+requests
