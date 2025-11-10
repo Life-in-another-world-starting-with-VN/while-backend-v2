@@ -136,6 +136,8 @@ class SceneRepository:
         scene_type: str,
         dialogue: Optional[str] = None,
         selections: Optional[dict] = None,
+        character_id: Optional[int] = None,
+        emotion: Optional[str] = None,
     ) -> Scene:
         """새 씬 생성"""
         scene = Scene(
@@ -145,6 +147,8 @@ class SceneRepository:
             type=scene_type,
             dialogue=dialogue,
             selections=selections,
+            character_id=character_id,
+            emotion=emotion,
         )
         self.db.add(scene)
         self.db.commit()

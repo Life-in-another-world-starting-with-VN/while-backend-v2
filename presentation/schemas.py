@@ -45,6 +45,7 @@ class SceneData(BaseModel):
     type: str
     dialogue: Optional[str] = None
     selections: Dict[str, str] = {}
+    character_filename: Optional[str] = None  # 캐릭터 이미지 파일명 (예: "1_smile.png")
 
 
 class SessionData(BaseModel):

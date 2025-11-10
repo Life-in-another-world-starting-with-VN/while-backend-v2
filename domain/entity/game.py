@@ -61,6 +61,8 @@ class Scene(Base):
     dialogue = Column(Text, nullable=True)  # type=dialogue일 때 대사 내용
     selections = Column(JSON, nullable=True)  # type=selection일 때 선택지 {"1": "...", "2": "..."}
     selected_option = Column(Integer, nullable=True)  # 사용자가 선택한 옵션 번호 (선택지인 경우)
+    character_id = Column(Integer, nullable=True)  # 캐릭터 ID (캐릭터가 말하는 경우)
+    emotion = Column(String(20), nullable=True)  # 캐릭터 표정 (anger, blush, embarrassed, laugh, sad, smile, surprise, thinking, worry, 기본)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     # Relationships

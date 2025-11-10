@@ -22,6 +22,17 @@ class GameService:
         self.bg_generator = BackgroundGenerator()
         self.llm_service = LLMService()
 
+    def _get_character_filename(self, character_id: Optional[int], emotion: Optional[str]) -> Optional[str]:
+        """캐릭터 이미지 파일명 생성"""
+        if character_id is None:
+            return None
+        
+        # emotion이 없거나 빈 문자열이면 기본 표정
+        if not emotion:
+            return f"{character_id}.png"
+        
+        return f"{character_id}_{emotion}.png"
+
     def create_new_game(
         self, user_id: int, personality: str, genre: str, playtime: int
     ) -> Dict:
@@ -84,6 +95,8 @@ class GameService:
             scene_type=first_scene_data["type"],
             dialogue=first_scene_data.get("dialogue"),
             selections=first_scene_data.get("selections"),
+            character_id=first_scene_data.get("character_id"),
+            emotion=first_scene_data.get("emotion"),
         )
 
         # 6. 응답 구성
@@ -104,6 +117,7 @@ class GameService:
                             "type": scene.type,
                             "dialogue": scene.dialogue,
                             "selections": scene.selections or {},
+                            "character_filename": self._get_character_filename(scene.character_id, scene.emotion),
                         }
                     ],
                     "background_url": session.background_url,
@@ -205,6 +219,8 @@ class GameService:
                 scene_type=new_scene_data["type"],
                 dialogue=new_scene_data.get("dialogue"),
                 selections=new_scene_data.get("selections"),
+                character_id=new_scene_data.get("character_id"),
+                emotion=new_scene_data.get("emotion"),
             )
 
             return {
@@ -217,6 +233,7 @@ class GameService:
                         "type": new_scene.type,
                         "dialogue": new_scene.dialogue,
                         "selections": new_scene.selections or {},
+                        "character_filename": self._get_character_filename(new_scene.character_id, new_scene.emotion),
                     }
                 ],
                 "background_url": new_session.background_url,
@@ -233,6 +250,8 @@ class GameService:
                 scene_type=new_scene_data["type"],
                 dialogue=new_scene_data.get("dialogue"),
                 selections=new_scene_data.get("selections"),
+                character_id=new_scene_data.get("character_id"),
+                emotion=new_scene_data.get("emotion"),
             )
 
             return {
@@ -245,6 +264,7 @@ class GameService:
                         "type": new_scene.type,
                         "dialogue": new_scene.dialogue,
                         "selections": new_scene.selections or {},
+                        "character_filename": self._get_character_filename(new_scene.character_id, new_scene.emotion),
                     }
                 ],
                 "background_url": session.background_url,
@@ -371,6 +391,8 @@ class GameService:
                 scene_type=new_scene_data["type"],
                 dialogue=new_scene_data.get("dialogue"),
                 selections=new_scene_data.get("selections"),
+                character_id=new_scene_data.get("character_id"),
+                emotion=new_scene_data.get("emotion"),
             )
 
             return {
@@ -383,6 +405,7 @@ class GameService:
                         "type": new_scene.type,
                         "dialogue": new_scene.dialogue,
                         "selections": new_scene.selections or {},
+                        "character_filename": self._get_character_filename(new_scene.character_id, new_scene.emotion),
                     }
                 ],
                 "background_url": new_session.background_url,
@@ -399,6 +422,8 @@ class GameService:
                 scene_type=new_scene_data["type"],
                 dialogue=new_scene_data.get("dialogue"),
                 selections=new_scene_data.get("selections"),
+                character_id=new_scene_data.get("character_id"),
+                emotion=new_scene_data.get("emotion"),
             )
 
             return {
@@ -411,6 +436,7 @@ class GameService:
                         "type": new_scene.type,
                         "dialogue": new_scene.dialogue,
                         "selections": new_scene.selections or {},
+                        "character_filename": self._get_character_filename(new_scene.character_id, new_scene.emotion),
                     }
                 ],
                 "background_url": session.background_url,

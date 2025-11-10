@@ -23,7 +23,7 @@ class LLMService:
         """
         characters_info = "\n".join(
             [
-                f"- {char['name']}: {char['personality']}"
+                f"- ID {char['id']}: {char['name']} - {char['personality']}"
                 for char in characters
             ]
         )
@@ -44,7 +44,9 @@ class LLMService:
     "first_scene": {{
         "role": "캐릭터명 or narrator",
         "type": "dialogue",
-        "dialogue": "첫 대사"
+        "dialogue": "첫 대사",
+        "character_id": 캐릭터ID숫자 (캐릭터가 말하는 경우만, narrator면 null),
+        "emotion": "표정" (캐릭터가 말하는 경우만, narrator면 null)
     }}
 }}
 
@@ -57,8 +59,12 @@ class LLMService:
    - 예시 (좋음): "도서관. 조용한 분위기 속에서 책 읽는 학생들이 보인다"
    - 예시 (나쁨): "학교 건물 어딘가" (X - 구체적인 장소가 아님!)
 3. 첫 씬은 항상 dialogue 타입으로 시작
-4. 응답은 반드시 유효한 JSON 형식이어야 합니다
-5. JSON만 출력하고 다른 설명은 하지 마세요"""
+4. **캐릭터 표정 규칙**:
+   - 캐릭터가 말하는 경우 반드시 character_id와 emotion 포함
+   - emotion은 다음 중 하나: anger, blush, embarrassed, laugh, sad, smile, surprise, thinking, worry, 또는 빈 문자열(기본 표정)
+   - narrator인 경우 character_id와 emotion은 null
+5. 응답은 반드시 유효한 JSON 형식이어야 합니다
+6. JSON만 출력하고 다른 설명은 하지 마세요"""
 
         response = self.__client.models.generate_content(
             model=self.gemini_model,
@@ -147,7 +153,9 @@ class LLMService:
         "selections": {{
             "1": "선택지 1",
             "2": "선택지 2"
-        }}
+        }},
+        "character_id": 캐릭터ID숫자 (캐릭터가 말하는 경우만, user/narrator면 null),
+        "emotion": "표정" (캐릭터가 말하는 경우만, user/narrator면 null)
     }},
     "session_ended": false,
     "new_session_content": null
@@ -189,9 +197,14 @@ class LLMService:
 
 6. **현재 장소**: {current_location} - 이 장소와 다른 곳으로 이동하면 새 세션 시작
 
-7. type이 "selection"이면 role은 "user", dialogue는 null
-8. type이 "dialogue"면 selections는 null 또는 빈 객체
-9. JSON만 출력하고 다른 설명은 하지 마세요"""
+7. **캐릭터 표정 규칙**:
+   - 캐릭터가 말하는 경우 반드시 character_id와 emotion 포함
+   - emotion은 다음 중 하나: anger, blush, embarrassed, laugh, sad, smile, surprise, thinking, worry, 또는 빈 문자열(기본 표정)
+   - user나 narrator인 경우 character_id와 emotion은 null
+
+8. type이 "selection"이면 role은 "user", dialogue는 null
+9. type이 "dialogue"면 selections는 null 또는 빈 객체
+10. JSON만 출력하고 다른 설명은 하지 마세요"""
 
         response = self.__client.models.generate_content(
             model=self.gemini_model,
@@ -229,7 +242,7 @@ class LLMService:
         선택지 선택 후 다음 씬 생성
         """
         characters_info = "\n".join(
-            [f"- {char['name']}: {char['personality']}" for char in characters]
+            [f"- ID {char['id']}: {char['name']} - {char['personality']}" for char in characters]
         )
 
         # 감정 분석
@@ -290,7 +303,9 @@ class LLMService:
     "scene": {{
         "role": "캐릭터명 or narrator",
         "type": "dialogue",
-        "dialogue": "캐릭터의 반응 대사"
+        "dialogue": "캐릭터의 반응 대사",
+        "character_id": 캐릭터ID숫자 (캐릭터가 말하는 경우만, narrator면 null),
+        "emotion": "표정" (캐릭터가 말하는 경우만, narrator면 null)
     }},
     "session_ended": false,
     "new_session_content": null
@@ -338,7 +353,12 @@ class LLMService:
 
 7. **현재 장소**: {current_location} - 선택으로 인해 다른 곳으로 이동하면 새 세션 시작
 
-8. JSON만 출력하고 다른 설명은 하지 마세요"""
+8. **캐릭터 표정 규칙**:
+   - 캐릭터가 말하는 경우 반드시 character_id와 emotion 포함
+   - emotion은 다음 중 하나: anger, blush, embarrassed, laugh, sad, smile, surprise, thinking, worry, 또는 빈 문자열(기본 표정)
+   - narrator인 경우 character_id와 emotion은 null
+
+9. JSON만 출력하고 다른 설명은 하지 마세요"""
 
         response = self.__client.models.generate_content(
             model=self.gemini_model,
