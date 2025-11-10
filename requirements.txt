@@ -11,3 +11,5 @@ pytest
 pytest-asyncio
 httpx
 email-validator
+google-genai
+python-dotenv
