@@ -35,6 +35,7 @@ class GameRepository:
         personality: str,
         genre: str,
         playtime: int,
+        main_character_id: int,
     ) -> Game:
         """새 게임 생성"""
         game = Game(
@@ -43,6 +44,7 @@ class GameRepository:
             personality=personality,
             genre=genre,
             playtime=playtime,
+            main_character_id=main_character_id,
         )
         self.db.add(game)
         self.db.commit()

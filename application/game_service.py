@@ -58,6 +58,29 @@ class GameService:
             characters=characters_dict,
         )
 
+        # 메인 캐릭터 ID 추출
+        main_character_id = game_structure.get("main_character_id")
+        main_character_name = game_structure.get("main_character_name")
+        
+        if not main_character_id:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="LLM failed to select main character",
+            )
+
+        # 메인 캐릭터 검증
+        main_character = self.character_repo.get_character_by_id(main_character_id)
+        if not main_character:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Invalid character_id {main_character_id} from LLM",
+            )
+        
+        # LLM이 반환한 이름과 실제 캐릭터 이름이 다르면 경고 로그
+        if main_character_name and main_character_name != main_character.name:
+            print(f"Warning: LLM returned character name '{main_character_name}' but actual name is '{main_character.name}'")
+            main_character_name = main_character.name  # 실제 이름으로 덮어쓰기
+
         # 3. 게임 생성
         game = self.game_repo.create_game(
             user_id=user_id,
@@ -65,6 +88,7 @@ class GameService:
             personality=personality,
             genre=genre,
             playtime=playtime,
+            main_character_id=main_character_id,
         )
 
         # 4. 첫 세션 생성
@@ -106,6 +130,8 @@ class GameService:
             "genre": game.genre,
             "title": game.title,
             "playtime": game.playtime,
+            "main_character_id": game.main_character_id,
+            "main_character_name": main_character.name,
             "sessions": [
                 {
                     "session_id": session.id,
@@ -183,6 +209,7 @@ class GameService:
                 elapsed_time=elapsed_time,
                 total_playtime=game.playtime,
                 characters=characters_dict,
+                main_character_id=game.main_character_id,
             )
         )
 
@@ -334,11 +361,13 @@ class GameService:
             for sc in scenes
         ]
 
-        # 5. 게임 컨텍스트
+        # 5. 게임 컨텍스트 (메인 캐릭터 정보 포함)
+        main_character = self.character_repo.get_character_by_id(game.main_character_id)
         game_context = {
             "title": game.title,
             "genre": game.genre,
             "personality": game.personality,
+            "main_character_name": main_character.name if main_character else "Unknown",
         }
 
         # 6. 선택한 옵션
@@ -355,6 +384,7 @@ class GameService:
                 elapsed_time=elapsed_time,
                 total_playtime=game.playtime,
                 characters=characters_dict,
+                main_character_id=game.main_character_id,
             )
         )
 

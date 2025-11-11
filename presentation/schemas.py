@@ -61,6 +61,8 @@ class CreateGameResponse(BaseModel):
     genre: str
     title: str
     playtime: int
+    main_character_id: int
+    main_character_name: str
     sessions: List[SessionData]
 
 

@@ -24,6 +24,7 @@ class Game(Base):
     personality = Column(String(100), nullable=False)  # 캐릭터 성격
     genre = Column(String(100), nullable=False)  # 게임 장르
     playtime = Column(Integer, nullable=False)  # 분 단위 플레이 시간
+    main_character_id = Column(Integer, ForeignKey("characters.id"), nullable=False)  # 게임의 메인 캐릭터
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
