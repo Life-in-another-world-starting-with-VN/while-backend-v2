@@ -4,6 +4,7 @@ sqlalchemy
 pymysql
 cryptography
 pydantic
+pydantic-settings
 python-jose[cryptography]
 passlib[bcrypt]
 python-multipart
@@ -11,7 +12,7 @@ pytest
 pytest-asyncio
 httpx
 email-validator
-pydantic-settings
 google-genai
 python-dotenv
+pillow
 requests

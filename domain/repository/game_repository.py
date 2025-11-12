@@ -35,6 +35,7 @@ class GameRepository:
         personality: str,
         genre: str,
         playtime: int,
+        main_character_id: int,
     ) -> Game:
         """새 게임 생성"""
         game = Game(
@@ -43,6 +44,7 @@ class GameRepository:
             personality=personality,
             genre=genre,
             playtime=playtime,
+            main_character_id=main_character_id,
         )
         self.db.add(game)
         self.db.commit()
@@ -136,6 +138,8 @@ class SceneRepository:
         scene_type: str,
         dialogue: Optional[str] = None,
         selections: Optional[dict] = None,
+        character_id: Optional[int] = None,
+        emotion: Optional[str] = None,
     ) -> Scene:
         """새 씬 생성"""
         scene = Scene(
@@ -145,6 +149,8 @@ class SceneRepository:
             type=scene_type,
             dialogue=dialogue,
             selections=selections,
+            character_id=character_id,
+            emotion=emotion,
         )
         self.db.add(scene)
         self.db.commit()

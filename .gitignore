@@ -41,3 +41,8 @@ htmlcov/
 *.swp
 *.swo
 *~
+
+# Generated images
+static/generated_images/*.png
+
+.kiro

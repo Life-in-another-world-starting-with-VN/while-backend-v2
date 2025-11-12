@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     # FAL API Settings
     FAL_KEY: str = ""
     FAL_URL: str = ""
+    
+    # Google AI Image Generation Settings
+    IMAGE_MODEL: str = "gemini-2.5-flash-image"
     IMAGE_SIZE: str = "16:9"
 
     model_config = SettingsConfigDict(env_file=".env")

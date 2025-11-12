@@ -22,6 +22,17 @@ class GameService:
         self.bg_generator = BackgroundGenerator()
         self.llm_service = LLMService()
 
+    def _get_character_filename(self, character_id: Optional[int], emotion: Optional[str]) -> Optional[str]:
+        """캐릭터 이미지 파일명 생성"""
+        if character_id is None:
+            return None
+        
+        # emotion이 없거나 빈 문자열이면 기본 표정
+        if not emotion:
+            return f"{character_id}.png"
+        
+        return f"{character_id}_{emotion}.png"
+
     def create_new_game(
         self, user_id: int, personality: str, genre: str, playtime: int
     ) -> Dict:
@@ -47,6 +58,29 @@ class GameService:
             characters=characters_dict,
         )
 
+        # 메인 캐릭터 ID 추출
+        main_character_id = game_structure.get("main_character_id")
+        main_character_name = game_structure.get("main_character_name")
+        
+        if not main_character_id:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="LLM failed to select main character",
+            )
+
+        # 메인 캐릭터 검증
+        main_character = self.character_repo.get_character_by_id(main_character_id)
+        if not main_character:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Invalid character_id {main_character_id} from LLM",
+            )
+        
+        # LLM이 반환한 이름과 실제 캐릭터 이름이 다르면 경고 로그
+        if main_character_name and main_character_name != main_character.name:
+            print(f"Warning: LLM returned character name '{main_character_name}' but actual name is '{main_character.name}'")
+            main_character_name = main_character.name  # 실제 이름으로 덮어쓰기
+
         # 3. 게임 생성
         game = self.game_repo.create_game(
             user_id=user_id,
@@ -54,6 +88,7 @@ class GameService:
             personality=personality,
             genre=genre,
             playtime=playtime,
+            main_character_id=main_character_id,
         )
 
         # 4. 첫 세션 생성
@@ -84,6 +119,8 @@ class GameService:
             scene_type=first_scene_data["type"],
             dialogue=first_scene_data.get("dialogue"),
             selections=first_scene_data.get("selections"),
+            character_id=first_scene_data.get("character_id"),
+            emotion=first_scene_data.get("emotion"),
         )
 
         # 6. 응답 구성
@@ -93,6 +130,8 @@ class GameService:
             "genre": game.genre,
             "title": game.title,
             "playtime": game.playtime,
+            "main_character_id": game.main_character_id,
+            "main_character_name": main_character.name,
             "sessions": [
                 {
                     "session_id": session.id,
@@ -104,6 +143,7 @@ class GameService:
                             "type": scene.type,
                             "dialogue": scene.dialogue,
                             "selections": scene.selections or {},
+                            "character_filename": self._get_character_filename(scene.character_id, scene.emotion),
                         }
                     ],
                     "background_url": session.background_url,
@@ -169,6 +209,7 @@ class GameService:
                 elapsed_time=elapsed_time,
                 total_playtime=game.playtime,
                 characters=characters_dict,
+                main_character_id=game.main_character_id,
             )
         )
 
@@ -205,6 +246,8 @@ class GameService:
                 scene_type=new_scene_data["type"],
                 dialogue=new_scene_data.get("dialogue"),
                 selections=new_scene_data.get("selections"),
+                character_id=new_scene_data.get("character_id"),
+                emotion=new_scene_data.get("emotion"),
             )
 
             return {
@@ -217,6 +260,7 @@ class GameService:
                         "type": new_scene.type,
                         "dialogue": new_scene.dialogue,
                         "selections": new_scene.selections or {},
+                        "character_filename": self._get_character_filename(new_scene.character_id, new_scene.emotion),
                     }
                 ],
                 "background_url": new_session.background_url,
@@ -233,6 +277,8 @@ class GameService:
                 scene_type=new_scene_data["type"],
                 dialogue=new_scene_data.get("dialogue"),
                 selections=new_scene_data.get("selections"),
+                character_id=new_scene_data.get("character_id"),
+                emotion=new_scene_data.get("emotion"),
             )
 
             return {
@@ -245,6 +291,7 @@ class GameService:
                         "type": new_scene.type,
                         "dialogue": new_scene.dialogue,
                         "selections": new_scene.selections or {},
+                        "character_filename": self._get_character_filename(new_scene.character_id, new_scene.emotion),
                     }
                 ],
                 "background_url": session.background_url,
@@ -314,11 +361,13 @@ class GameService:
             for sc in scenes
         ]
 
-        # 5. 게임 컨텍스트
+        # 5. 게임 컨텍스트 (메인 캐릭터 정보 포함)
+        main_character = self.character_repo.get_character_by_id(game.main_character_id)
         game_context = {
             "title": game.title,
             "genre": game.genre,
             "personality": game.personality,
+            "main_character_name": main_character.name if main_character else "Unknown",
         }
 
         # 6. 선택한 옵션
@@ -335,6 +384,7 @@ class GameService:
                 elapsed_time=elapsed_time,
                 total_playtime=game.playtime,
                 characters=characters_dict,
+                main_character_id=game.main_character_id,
             )
         )
 
@@ -371,6 +421,8 @@ class GameService:
                 scene_type=new_scene_data["type"],
                 dialogue=new_scene_data.get("dialogue"),
                 selections=new_scene_data.get("selections"),
+                character_id=new_scene_data.get("character_id"),
+                emotion=new_scene_data.get("emotion"),
             )
 
             return {
@@ -383,6 +435,7 @@ class GameService:
                         "type": new_scene.type,
                         "dialogue": new_scene.dialogue,
                         "selections": new_scene.selections or {},
+                        "character_filename": self._get_character_filename(new_scene.character_id, new_scene.emotion),
                     }
                 ],
                 "background_url": new_session.background_url,
@@ -399,6 +452,8 @@ class GameService:
                 scene_type=new_scene_data["type"],
                 dialogue=new_scene_data.get("dialogue"),
                 selections=new_scene_data.get("selections"),
+                character_id=new_scene_data.get("character_id"),
+                emotion=new_scene_data.get("emotion"),
             )
 
             return {
@@ -411,6 +466,7 @@ class GameService:
                         "type": new_scene.type,
                         "dialogue": new_scene.dialogue,
                         "selections": new_scene.selections or {},
+                        "character_filename": self._get_character_filename(new_scene.character_id, new_scene.emotion),
                     }
                 ],
                 "background_url": session.background_url,

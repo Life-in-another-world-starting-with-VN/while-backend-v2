@@ -20,6 +20,28 @@ def db_session():
     Base.metadata.create_all(bind=engine)
     db = TestingSessionLocal()
     try:
+        # 테스트용 캐릭터 데이터 삽입
+        from domain.entity.game import Character
+        
+        characters = [
+            Character(
+                name="아리아나",
+                personality="밝고 활발한 성격. 항상 긍정적이고 주변 사람들을 웃게 만드는 것을 좋아한다."
+            ),
+            Character(
+                name="유나",
+                personality="조용하고 차분한 성격. 책을 좋아하며 깊이 있는 대화를 선호한다."
+            ),
+            Character(
+                name="소라",
+                personality="도도하지만 따뜻한 성격. 처음엔 차갑게 대하지만 친해지면 누구보다 다정하다."
+            ),
+        ]
+        
+        for char in characters:
+            db.add(char)
+        db.commit()
+        
         yield db
     finally:
         db.close()
