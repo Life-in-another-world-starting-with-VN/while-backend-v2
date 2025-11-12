@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
 from core.database import Base, engine
+from insert_characters import insert_characters
 from presentation.auth_router import router as auth_router
 from presentation.game_router import router as game_router
 
@@ -29,6 +30,7 @@ if not static_dir.exists():
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
+    insert_characters()
 
 # 라우터 등록 (정적 파일보다 먼저)
 app.include_router(auth_router)
