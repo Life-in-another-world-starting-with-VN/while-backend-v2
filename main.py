@@ -22,13 +22,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+static_dir = Path("static")
+if not static_dir.exists():
+    static_dir.mkdir(parents=True)
+
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
-    
-    # 정적 파일 디렉토리 생성
-    images_dir = Path("static/generated_images")
-    images_dir.mkdir(parents=True, exist_ok=True)
 
 # 라우터 등록 (정적 파일보다 먼저)
 app.include_router(auth_router)
