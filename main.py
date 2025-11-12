@@ -30,12 +30,12 @@ def on_startup():
     images_dir = Path("static/generated_images")
     images_dir.mkdir(parents=True, exist_ok=True)
 
-# 정적 파일 서빙 설정
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
-# 라우터 등록
+# 라우터 등록 (정적 파일보다 먼저)
 app.include_router(auth_router)
 app.include_router(game_router)
+
+# 정적 파일 서빙 설정 (라우터 다음에)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 @app.get("/")
