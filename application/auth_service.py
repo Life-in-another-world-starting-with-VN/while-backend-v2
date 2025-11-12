@@ -126,14 +126,12 @@ class AuthService:
         # 새로운 리프레시 토큰 생성
         new_refresh_token = create_refresh_token(data={"sub": str(user.id), "username": user.username})
 
-        # 기존 리프레시 토큰 삭제
-        self.user_repository.delete_refresh_token(refresh_token)
-
-        # 새로운 리프레시 토큰 저장
+        # 기존 토큰 삭제 및 새 토큰 저장 (원자적 작업)
         expires_at = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-        self.user_repository.save_refresh_token(
+        self.user_repository.replace_refresh_token(
+            old_token=refresh_token,
             user_id=user.id,
-            token=new_refresh_token,
+            new_token=new_refresh_token,
             expires_at=expires_at
         )
 

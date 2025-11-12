@@ -45,3 +45,21 @@ class UserRepository:
     def delete_refresh_token(self, token: str) -> None:
         self.db.query(RefreshToken).filter(RefreshToken.token == token).delete()
         self.db.commit()
+
+    def replace_refresh_token(self, old_token: str, user_id: int, new_token: str, expires_at: datetime) -> RefreshToken:
+        """기존 토큰을 삭제하고 새 토큰을 저장하는 원자적 작업"""
+        # 기존 토큰 삭제
+        self.db.query(RefreshToken).filter(RefreshToken.token == old_token).delete()
+        
+        # 새 토큰 생성
+        refresh_token = RefreshToken(
+            user_id=user_id,
+            token=new_token,
+            expires_at=expires_at
+        )
+        self.db.add(refresh_token)
+        
+        # 한 번에 commit
+        self.db.commit()
+        self.db.refresh(refresh_token)
+        return refresh_token
