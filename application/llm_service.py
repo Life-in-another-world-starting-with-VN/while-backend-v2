@@ -30,34 +30,40 @@ class LLMService:
 
         prompt = f"""당신은 미연시 게임 스토리 작가입니다.
 
+🎮 **핵심 개념 (절대 잊지 마세요!)**
+- **플레이어 = 게임의 주인공**입니다
+- 플레이어는 스토리 속 주인공으로서 캐릭터들과 상호작용합니다
+- 아래 캐릭터들은 주인공(플레이어)과 만나고 대화하는 **주요 등장인물**들입니다
+
 다음 정보를 바탕으로 미연시 게임을 설계해주세요:
 - 원하는 성격: {personality}
 - 장르: {genre}
 - 플레이 시간: {playtime}분
-- 등장 캐릭터:
+- 등장 캐릭터들:
 {characters_info}
 
 다음 JSON 형식으로 응답해주세요:
 {{
     "title": "게임 제목",
-    "main_character_id": 선택한_메인_캐릭터_ID숫자,
+    "main_character_id": 선택한_주요등장인물_ID숫자,
     "main_character_name": "선택한_캐릭터의_정확한_이름",
     "first_session_content": "첫 번째 세션 설명 (장소와 상황을 명확히)",
     "first_scene": {{
         "role": "선택한_캐릭터의_정확한_이름",
         "type": "dialogue",
         "dialogue": "첫 대사",
-        "character_id": 메인_캐릭터_ID숫자,
+        "character_id": 주요등장인물_ID숫자,
         "emotion": "표정"
     }}
 }}
 
 중요 규칙:
-1. **메인 캐릭터 선택 (매우 중요!)**:
+1. **주요 등장인물 선택 (매우 중요!)**:
    - 위 캐릭터 목록에서 사용자가 원하는 성격 "{personality}"과 가장 잘 맞는 캐릭터 1명을 선택하세요
    - 선택한 캐릭터의 ID를 main_character_id에 입력하세요
    - **선택한 캐릭터의 이름을 main_character_name에 정확히 입력하세요 (위 목록의 이름 그대로)**
-   - 이 캐릭터가 게임 전체에서 메인 캐릭터로 등장합니다
+   - 이 캐릭터가 게임에서 가장 많이 등장하는 주요 등장인물이 됩니다
+   - **플레이어는 이 주요 등장인물들과 만나고 대화하는 주인공입니다**
 2. 세션은 동적으로 생성되므로 first_session_content만 작성
 3. **first_session_content 작성 규칙 (매우 중요!)**:
    - 반드시 **구체적인 장소명**을 포함하세요
@@ -67,7 +73,7 @@ class LLMService:
    - 예시 (나쁨): "학교 건물 어딘가" (X - 구체적인 장소가 아님!)
 4. **첫 씬 규칙**:
    - role은 선택한 캐릭터의 이름 (위 목록의 이름 그대로, 절대 변경하지 마세요!) 또는 narrator(나레이션 역할)
-   - character_id는 선택한 메인 캐릭터의 ID
+   - character_id는 선택한 주요 등장인물의 ID
    - emotion은 다음 중 하나: anger, blush, embarrassed, laugh, sad, smile, surprise, thinking, worry, 또는 빈 문자열(기본 표정)
 5. 응답은 반드시 유효한 JSON 형식이어야 합니다
 6. JSON만 출력하고 다른 설명은 하지 마세요"""
@@ -149,18 +155,20 @@ class LLMService:
 🚨 **절대 잊지 마세요!** 🚨
 - **사용자(플레이어)는 등장인물이 아닙니다!**
 - 게임 등장 캐릭터와 게임 플레이어는 같은 사람이 될 수 없습니다!!!
-- **선택지는 사용자의 행동이므로 role="narrator", type="selection"으로만 생성!**
+- **플레이어 = 게임의 주인공**입니다
+- 플레이어는 스토리 속 주인공으로서 캐릭터들과 상호작용합니다
+- 아래 캐릭터들은 주인공(플레이어)과 만나고 대화하는 **등장 캐릭터**들입니다
 
 게임 정보:
 - 제목: {game_context['title']}
 - 장르: {game_context['genre']}
 - 캐릭터 성격: {game_context['personality']}
 
-등장 캐릭터:
+등장 캐릭터들:
 {characters_info}
 * narrator: 나레이션 역할
 
-**메인 캐릭터**: {main_character_name} (ID: {main_character_id}) - 이 캐릭터가 가장 많이 등장하지만, 다른 캐릭터들도 자연스럽게 등장시키세요!
+**주요 등장 캐릭터**: {main_character_name} (ID: {main_character_id}) - 이 캐릭터가 주로 등장하지만, 다른 캐릭터들도 자연스럽게 등장시키세요!
 
 **현재 세션 (현재 장소)**: {current_session_content}
 **현재 세션의 씬 개수**: {current_session_scene_count}개
@@ -330,16 +338,18 @@ class LLMService:
 🚨 **절대 잊지 마세요!** 🚨
 - **사용자(플레이어)는 등장인물이 아닙니다!**
 - 게임 등장 캐릭터와 게임 플레이어는 같은 사람이 될 수 없습니다!!!
-- **선택지는 사용자의 행동이므로 role="narrator", type="selection"으로만 생성!**
+- **플레이어 = 게임의 주인공**입니다
+- 플레이어는 스토리 속 주인공으로서 캐릭터들과 상호작용합니다
+- 아래 캐릭터들은 주인공(플레이어)과 만나고 대화하는 **등장 캐릭터**들입니다
 
 게임 정보:
 - 제목: {game_context['title']}
 - 장르: {game_context['genre']}
 - 캐릭터 성격: {game_context['personality']}
 
-**메인 캐릭터**: {main_character_name} (ID: {main_character_id}) - 이 캐릭터가 가장 많이 등장하지만, 다른 캐릭터들도 자연스럽게 등장시키세요!
+**가장 많이 등장하는 캐릭터**: {main_character_name} (ID: {main_character_id}) - 이 캐릭터가 주로 등장하지만, 다른 캐릭터들도 자연스럽게 등장시키세요!
 
-등장 캐릭터:
+등장 캐릭터들:
 {characters_info}
 * narrator: 나레이션 역할
 
