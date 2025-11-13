@@ -181,7 +181,7 @@ class GameService:
         ]
 
         # 3. 대화 히스토리 (현재 세션의 모든 씬)
-        scenes = self.scene_repo.get_scenes_by_session(session_id)
+        scenes = self.scene_repo.get_all_scenes_in_game(game_id)
         scene_history = [
             {
                 "role": sc.role,
@@ -350,7 +350,7 @@ class GameService:
         ]
 
         # 4. 대화 히스토리
-        scenes = self.scene_repo.get_scenes_by_session(session_id)
+        scenes = self.scene_repo.get_all_scenes_in_game(game_id)
         scene_history = [
             {
                 "role": sc.role,
