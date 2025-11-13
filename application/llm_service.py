@@ -134,6 +134,16 @@ class LLMService:
             ]
         )
 
+        # 마지막 대사 추출 (선택지 관련성을 위해)
+        last_dialogue = ""
+        if scene_history:
+            last_scene = scene_history[-1]
+            last_dialogue = last_scene.get('dialogue', '')
+            if not last_dialogue and last_scene.get('type') == 'selection':
+                # 선택지인 경우 그 전 대사 찾기
+                if len(scene_history) >= 2:
+                    last_dialogue = scene_history[-2].get('dialogue', '')
+
         prompt = f"""당신은 미연시 게임 스토리 작가입니다. 빠르고 흥미진진한 전개로 고백 엔딩까지 이끄는 것이 목표입니다.
 
 게임 정보:
@@ -145,11 +155,15 @@ class LLMService:
 {characters_info}
 * narrator: 나레이션 역할
 
+**메인 캐릭터**: {main_character_name} (ID: {main_character_id}) - 이 캐릭터가 가장 많이 등장하지만, 다른 캐릭터들도 자연스럽게 등장시키세요!
+
 **현재 세션 (현재 장소)**: {current_session_content}
 **현재 세션의 씬 개수**: {current_session_scene_count}개
 
 **현재 세션의 전체 대화 흐름**:
 {current_session_history}
+
+**바로 직전 대사**: "{last_dialogue}"
 
 사용자 감정: {emotion_str}
 게임 진행도: {time_progress:.1f}% (남은 시간: {remaining_time}초)
@@ -158,14 +172,14 @@ class LLMService:
 
 {{
     "scene": {{
-        "role": "{main_character_name} or user or narrator",
+        "role": "캐릭터_이름 or user or narrator",
         "type": "dialogue or selection",
         "dialogue": "대사 내용 (type이 dialogue인 경우)",
         "selections": {{
-            "1": "선택지 1",
-            "2": "선택지 2"
+            "1": "선택지 1 (직전 대사와 연결되는 선택)",
+            "2": "선택지 2 (직전 대사와 연결되는 선택)"
         }},
-        "character_id": {main_character_id} (캐릭터가 말하는 경우만, user/narrator면 null),
+        "character_id": 캐릭터_ID숫자 (캐릭터가 말하는 경우만, user/narrator면 null),
         "emotion": "표정" (캐릭터가 말하는 경우만, user/narrator면 null)
     }},
     "session_ended": false,
@@ -174,11 +188,12 @@ class LLMService:
 
 🔥 **핵심 규칙 - 반드시 준수!** 🔥
 
-1. **캐릭터 고정**:
-   - role에는 정확히 "{main_character_name}" 사용 (절대 변경 금지!)
-   - character_id는 항상 {main_character_id}
-   - narrator는 사용 가능
-   - 다양한 캐릭터 번갈아 사용가능
+1. **다양한 캐릭터 활용 (매우 중요!)**:
+   - **메인 캐릭터 {main_character_name}가 주로 등장**하지만, 다른 캐릭터들도 자연스럽게 등장시키세요
+   - 상황에 맞게 다른 캐릭터들이 등장해서 대화에 참여할 수 있습니다
+   - role에 등장시킬 캐릭터 이름 입력, character_id에 해당 캐릭터 ID 입력
+   - 단 등장시키는 다른 캐릭터는 우리가 제시한 캐릭터 내에서 선택
+   - narrator를 활용해 다른 캐릭터의 등장이나 행동을 묘사할 수 있음
 
 2. **빠른 전개 - 절대 지루하게 하지 마세요!**:
    - 같은 장소에서 절대 질질 끌지 마세요
@@ -189,10 +204,14 @@ class LLMService:
    - 절대 깊은 대화는 피할것
    - 깊게 들어가지 말고 쭉쭉 진행하세요!
 
-3. **선택지는 간결하고 의미있게**:
+3. **선택지는 직전 대사와 연결되게 (매우 중요!)**:
+   - **선택지는 반드시 바로 직전 대사 "{last_dialogue}"와 관련된 내용이어야 합니다**
+   - 직전 대사에 대한 직접적인 반응이나 대답이 되어야 함
+   - 예시:
+     * 직전: "오늘 날씨 정말 좋지 않아?" → 선택지: "1. 응, 산책하러 갈까?", "2. 그러게, 이럴 땐 실외가 좋아"
+     * 직전: "이 책 읽어봤어?" → 선택지: "1. 아직 안 읽어봤어", "2. 응, 정말 재미있더라"
    - 계속 사용자 대사만 나오는것이 아닌 2, 3개의 씬중 한번은 선택지 제공
-   - 장소 이동, 관계 진전 등 스토리를 앞으로 나아가게 하는 선택지
-   - 단순 대화가 아닌 행동 중심 선택지
+   - 맥락에서 벗어난 엉뚱한 선택지 절대 금지!
 
 4. **시간 관리 - 엄수!**:
    - ** 진행시간 초반 0 ~ 30% **: 빠른 관계 형성, 함께 활동을 하며 친밀감 호감도 상승
@@ -216,7 +235,7 @@ class LLMService:
 6. **현재 장소**: {current_location}
 
 7. **캐릭터 표정**:
-   - 메인 캐릭터: character_id={main_character_id}, emotion 필수
+   - 해당 말이나 행동을 하는 캐릭터가 진짜 느끼고 있을 감정을 추측하여 하나 선택
    - emotion: anger, blush, embarrassed, laugh, sad, smile, surprise, thinking, worry 또는 빈 문자열
    - user/narrator: character_id와 emotion은 null
 
@@ -303,9 +322,7 @@ class LLMService:
 - 장르: {game_context['genre']}
 - 캐릭터 성격: {game_context['personality']}
 
-**메인 캐릭터 (이 게임의 주인공)**:
-- ID: {main_character_id}
-- 이름: {main_character_name} (이 이름을 정확히 사용하세요!)
+**메인 캐릭터**: {main_character_name} (ID: {main_character_id}) - 이 캐릭터가 가장 많이 등장하지만, 다른 캐릭터들도 자연스럽게 등장시키세요!
 
 등장 캐릭터:
 {characters_info}
@@ -324,14 +341,14 @@ class LLMService:
 사용자 감정: {emotion_str}
 게임 진행도: {time_progress:.1f}% (남은 시간: {remaining_time}초)
 
-사용자의 선택에 대한 캐릭터의 반응을 생성해주세요. JSON 형식으로만 응답하세요:
+사용자의 선택에 대한 반응을 생성해주세요. JSON 형식으로만 응답하세요:
 
 {{
     "scene": {{
-        "role": "{main_character_name} or narrator",
+        "role": "캐릭터_이름 or narrator",
         "type": "dialogue",
-        "dialogue": "캐릭터의 반응 대사",
-        "character_id": {main_character_id} (캐릭터가 말하는 경우만, narrator면 null),
+        "dialogue": "반응 대사",
+        "character_id": 캐릭터_ID숫자 (캐릭터가 말하는 경우만, narrator면 null),
         "emotion": "표정" (캐릭터가 말하는 경우만, narrator면 null)
     }},
     "session_ended": false,
@@ -340,11 +357,13 @@ class LLMService:
 
 🔥 **핵심 규칙 - 반드시 준수!** 🔥
 
-1. **캐릭터 고정**:
-   - role에는 정확히 "{main_character_name}" 사용 (절대 변경 금지!)
-   - character_id는 항상 {main_character_id}
-   - narrator 사용 가능
-   - 다양한 캐릭터 번갈아 사용가능
+1. **다양한 캐릭터 활용 (매우 중요!)**:
+   - **메인 캐릭터 {main_character_name}가 주로 등장**하지만, 다른 캐릭터들도 자연스럽게 등장시키세요
+   - 상황에 맞게 다른 캐릭터들이 등장해서 대화에 참여할 수 있습니다
+   - role에 반응할 캐릭터 이름 입력, character_id에 해당 캐릭터 ID 입력
+   - role에 등장시킬 캐릭터 이름 입력, character_id에 해당 캐릭터 ID 입력
+   - 단 등장시키는 다른 캐릭터는 우리가 제시한 캐릭터 내에서 선택
+   - narrator를 활용해 장면 전환이나 다른 캐릭터의 등장을 묘사할 수 있음
 
 2. **맥락 유지**:
    - 사용자가 선택한 행동 "{selected_option}"에 **직접적으로** 반응
@@ -382,7 +401,7 @@ class LLMService:
 6. **현재 장소**: {current_location}
 
 7. **캐릭터 표정**:
-   - 메인 캐릭터: character_id={main_character_id}, emotion 필수
+   - 해당 말이나 행동을 하는 캐릭터가 진짜 느끼고 있을 감정을 추측하여 하나 선택
    - emotion: anger, blush, embarrassed, laugh, sad, smile, surprise, thinking, worry 또는 빈 문자열
    - narrator: character_id와 emotion은 null
 
