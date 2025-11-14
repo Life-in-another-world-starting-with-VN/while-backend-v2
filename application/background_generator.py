@@ -10,6 +10,7 @@ from PIL import Image
 import io
 import re
 from datetime import datetime
+from typing import List, Optional
 
 load_dotenv()
 
@@ -53,32 +54,87 @@ class BackgroundGenerator:
             logger.error(error_msg)
             raise RuntimeError(error_msg)
 
+    def get_existing_images(self) -> List[str]:
+        """저장된 이미지 파일 목록 반환 (키워드 부분만)"""
+        existing_images = []
+        for file in self.__images_dir.glob("*.png"):
+            # 파일명에서 타임스탬프 제거하고 키워드만 추출
+            # 예: rainy_school_corridor_20251114_153045.png -> rainy_school_corridor
+            filename = file.stem  # 확장자 제거
+            # 마지막 타임스탬프 부분 제거 (YYYYMMDD_HHMMSS 패턴)
+            keyword = re.sub(r'_\d{8}_\d{6}$', '', filename)
+            if keyword:
+                existing_images.append(keyword)
+        return existing_images
+
+    def find_matching_image(self, keyword: str) -> Optional[str]:
+        """키워드와 일치하는 기존 이미지 찾기"""
+        clean_keyword = re.sub(r'[^\w\s-]', '', keyword)
+        clean_keyword = re.sub(r'[\s]+', '_', clean_keyword)
+        clean_keyword = clean_keyword[:50]
+        
+        # 정확히 일치하는 파일 찾기
+        for file in self.__images_dir.glob(f"{clean_keyword}_*.png"):
+            image_url = f"/static/generated_images/{file.name}"
+            logger.info(f"Found existing image for keyword '{keyword}': {file.name}")
+            return image_url
+        
+        return None
+
     def create_background_image(self, story: str) -> str:
-        prompt = self.__set_prompt(story)
+        # 기존 이미지 목록 가져오기
+        existing_images = self.get_existing_images()
+        
+        # LLM에게 기존 이미지 목록 전달하여 키워드 생성
+        prompt = self.__set_prompt(story, existing_images)
         background_search_keyword = self.__get_search_word(prompt)
         print(f"Background keyword: {background_search_keyword}")
 
         return self.create_background_image_by_keyword(background_search_keyword)
 
     def create_background_image_by_keyword(self, keyword: str) -> str:
+        # 먼저 기존 이미지 확인
+        existing_image = self.find_matching_image(keyword)
+        if existing_image:
+            print(f"Reusing existing image: {existing_image}")
+            return existing_image
+        
+        # 없으면 새로 생성
+        print(f"Generating new image for: {keyword}")
         background_image = self.__create_background_image(keyword)
 
         return background_image
 
-    def __set_prompt(self, story: str) -> str:
-        return (
+    def __set_prompt(self, story: str, existing_images: List[str] = None) -> str:
+        base_prompt = (
             "미연시 게임 배경 이미지를 생성할 영어 검색어가 필요합니다.\n"
             f"장면 설명: {story}\n\n"
-            "이 장면의 장소, 날씨, 분위기를 정확히 반영한 영어 검색어를 만들어주세요.\n"
-            "날씨가 중요한 경우 반드시 포함하세요 (rainy, sunny, cloudy, snowy 등).\n"
-            "응답은 검색어만 영어로! 설명 금지!\n\n"
-            "예시:\n"
-            "- 소나기 → rainy school corridor\n"
-            "- 교실 → sunny classroom\n"
-            "- 밤 공원 → night park\n"
-            "- 눈 내리는 거리 → snowy street\n\n"
-            "검색어:"
         )
+        
+        # 기존 이미지 목록이 있으면 추가
+        if existing_images:
+            base_prompt += (
+                "이미 생성된 배경 이미지 목록:\n"
+                f"{', '.join(existing_images)}\n\n"
+                "위 목록에 있는 배경과 유사하다면 정확히 같은 검색어를 사용하세요.\n"
+                "!!!(매우중요)!!! : 기존이미지를 사용할때는 이미 생성된 배경 이미지 목록에 있는 이름과 100% 동일하도록 구성하세요."
+                "완전히 다른 장면이라면 새로운 검색어를 만드세요.\n\n"
+            )
+        
+        base_prompt += (
+            "- 새로운 검색어 생성 방법"
+            "   이 장면의 장소, 날씨, 분위기를 정확히 반영한 영어 검색어를 만들어주세요.\n"
+            "   날씨가 중요한 경우 반드시 포함하세요 (rainy, sunny, cloudy, snowy 등).\n"
+            "   응답은 검색어만 영어로! 설명 금지!\n\n"
+            "   예시:\n"
+            "   - 소나기가 내리는 학교 → rainy school corridor\n"
+            "   - 화창한 교실 → sunny classroom\n"
+            "   - 밤 공원 → night park\n"
+            "   - 눈 내리는 거리 → snowy street\n\n"
+            "가능하다면 기존 이미지를 사용할 수 있도록 해주고 없다면 배경 이미지 생성을 해줘"
+        )
+        
+        return base_prompt
 
     def __get_search_word(self, prompt: str) -> str:
         response = self.__client.models.generate_content(
