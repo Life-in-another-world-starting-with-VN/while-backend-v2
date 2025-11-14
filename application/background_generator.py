@@ -8,6 +8,8 @@ import logging
 import requests
 from PIL import Image
 import io
+import re
+from datetime import datetime
 
 load_dotenv()
 
@@ -197,8 +199,15 @@ class BackgroundGenerator:
             logger.error(error_msg)
             raise RuntimeError(error_msg)
         
-        # Generate unique filename using UUID
-        filename = f"{uuid.uuid4()}.png"
+        # Generate filename with keyword and timestamp
+        # Clean keyword for filename (remove special chars, limit length)
+        clean_keyword = re.sub(r'[^\w\s-]', '', background_search_keyword)
+        clean_keyword = re.sub(r'[\s]+', '_', clean_keyword)
+        clean_keyword = clean_keyword[:50]  # Limit length
+        
+        # Add timestamp for uniqueness
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"{clean_keyword}_{timestamp}.png"
         filepath = self.__images_dir / filename
         
         # 파일 저장 실패 시 에러 처리
